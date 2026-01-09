@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Panel del Administrador</title>
 
-  <!-- Manifest para instalar como app -->
   <link rel="manifest" href="/manifest.json">
 
   <style>
@@ -147,7 +146,7 @@
       <label>Tarea:</label>
       <select id="selTarea"></select>
 
-      <button onclick="asignarTarea()">Asignar tarea</button>
+      <button onclick="alert('En Vercel no se pueden asignar tareas todavía (falta base de datos).')">Asignar tarea</button>
     </div>
 
     <h3>Calendario de tareas</h3>
@@ -175,7 +174,7 @@
       <label>Observación:</label>
       <input type="text" id="obsReprogramar" placeholder="Motivo de reprogramación">
 
-      <button onclick="confirmarReprogramar()">Confirmar</button>
+      <button onclick="alert('En Vercel no se pueden reprogramar tareas todavía.'); cerrarPopup();">Confirmar</button>
       <button onclick="cerrarPopup()">Cancelar</button>
     </div>
   </div>
@@ -186,7 +185,7 @@
     let fechaActual = new Date();
     let tareaReprogramar = null;
 
-    fetch("/empleados")
+    fetch("/api/empleados")
       .then(res => res.json())
       .then(data => {
         empleados = data;
@@ -196,7 +195,7 @@
         });
       });
 
-    fetch("/catalogo")
+    fetch("/api/catalogo")
       .then(res => res.json())
       .then(data => {
         catalogo = data;
@@ -218,24 +217,6 @@
       sel.innerHTML = "";
       catalogo[categoria].forEach(t => {
         sel.innerHTML += `<option value="${t}">${t}</option>`;
-      });
-    }
-
-    function asignarTarea() {
-      const id = document.getElementById("selEmpleado").value;
-      const fecha = document.getElementById("selFecha").value;
-      const tarea = document.getElementById("selTarea").value;
-
-      if (!id || !fecha || !tarea) return alert("Complete todos los campos");
-
-      fetch("/admin/agregar-tarea", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, fecha, tarea })
-      }).then(() => {
-        alert("Tarea asignada");
-        cargarCalendario();
-        verDia(fecha);
       });
     }
 
@@ -284,7 +265,7 @@
       for (let dia = 1; dia <= ultimoDia; dia++) {
         const fecha = `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
-        fetch(`/admin/tareas-completas?fecha=${fecha}`)
+        fetch(`/api/admin-tareas-completas?fecha=${fecha}`)
           .then(res => res.json())
           .then(data => {
             const div = document.getElementById("info-" + fecha);
@@ -313,7 +294,7 @@
       const cont = document.getElementById("listaTareas");
       cont.innerHTML = "<p>Cargando...</p>";
 
-      fetch(`/admin/tareas-completas?fecha=${fecha}`)
+      fetch(`/api/admin-tareas-completas?fecha=${fecha}`)
         .then(res => res.json())
         .then(data => mostrarTareas(fecha, data));
     }
@@ -350,156 +331,54 @@
 
       if (t.tipo === "asignada") {
         card.innerHTML += `
-          <button class="btn-mini" onclick="agregarObsAsignada(this)">Agregar obs admin</button>
+          <button class="btn-mini" onclick="alert('En Vercel no se pueden guardar observaciones todavía.')">Agregar obs admin</button>
         `;
       }
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Historial de Tareas</title>
 
-  <!-- Manifest para instalar como app -->
-  <link rel="manifest" href="/manifest.json">
-
-  <style>
-    body {
-      background-color: #1e1e1e;
-      color: #ffffff;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-
-    h1, h2 {
-      color: #ffc300;
-    }
-
-    #contenedor {
-      max-width: 900px;
-      margin: 20px auto;
-      background: #2a2a2a;
-      padding: 20px;
-      border-radius: 10px;
-      border-left: 5px solid #c1121f;
-      text-align: left;
-    }
-
-    .fecha-bloque {
-      margin-bottom: 30px;
-      padding: 15px;
-      background: #1e1e1e;
-      border-radius: 10px;
-      border-left: 5px solid #ffc300;
-    }
-
-    .tarea-card {
-      background: #2a2a2a;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border-left: 5px solid #c1121f;
-    }
-
-    button {
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      border: 2px solid #c1121f;
-      background: #ffc300;
-      color: #1e1e1e;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #c1121f;
-      color: #ffffff;
-    }
-  </style>
-</head>
-
-<body>
-
-  <h1>Historial de Tareas Aprobadas</h1>
-
-  <button onclick="window.location.href='admin.html'">⬅ Volver al panel</button>
-
-  <div id="contenedor">
-    <p>Cargando historial...</p>
-  </div>
-
-  <script>
-    // Evita inyecciones de HTML
-    function escapeHTML(str) {
-      if (!str) return "";
-      return str.replace(/[&<>"']/g, m => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      }[m]));
-    }
-
-    function cargarHistorial() {
-      fetch("/admin/historial")
-        .then(res => res.json())
-        .then(data => mostrarHistorial(data))
-        .catch(err => {
-          document.getElementById("contenedor").innerHTML =
-            "<p>Error al cargar el historial.</p>";
-          console.error("Error cargando historial:", err);
-        });
-    }
-
-    function mostrarHistorial(data) {
-      const cont = document.getElementById("contenedor");
-      cont.innerHTML = "";
-
-      if (!data || data.length === 0) {
-        cont.innerHTML = "<p>No hay tareas en el historial.</p>";
-        return;
+      if (t.tipo === "pendiente_admin") {
+        card.innerHTML += `
+          <button class="btn-mini" onclick="alert('En Vercel no se pueden aprobar tareas todavía.')">Aprobar</button>
+          <button class="btn-mini" onclick="abrirPopup(this)">Reprogramar</button>
+          <button class="btn-mini" onclick="alert('En Vercel no se pueden devolver tareas todavía.')">Devolver</button>
+        `;
       }
 
-      // Agrupar por fecha
-      const porFecha = {};
-      data.forEach(t => {
-        if (!porFecha[t.fecha]) porFecha[t.fecha] = [];
-        porFecha[t.fecha].push(t);
-      });
-
-      // Ordenar fechas de más reciente a más antigua
-      Object.keys(porFecha)
-        .sort((a, b) => new Date(b) - new Date(a))
-        .forEach(fecha => {
-          const bloque = document.createElement("div");
-          bloque.className = "fecha-bloque";
-
-          bloque.innerHTML = `<h2>${fecha}</h2>`;
-
-          porFecha[fecha].forEach(t => {
-            const card = document.createElement("div");
-            card.className = "tarea-card";
-
-            card.innerHTML = `
-              <strong>Empleado:</strong> ${escapeHTML(t.nombre)} (${escapeHTML(t.id)})<br>
-              <strong>Tarea:</strong> ${escapeHTML(t.tarea)}<br>
-              <strong>Estado:</strong> ${escapeHTML(t.estado)}<br>
-              ${t.obsEmpleado ? `<strong>Obs empleado:</strong> ${escapeHTML(t.obsEmpleado)}<br>` : ""}
-              ${t.obsAdmin ? `<strong>Obs admin:</strong> ${escapeHTML(t.obsAdmin)}<br>` : ""}
-              ${t.motivoNoRealizada ? `<strong>Motivo no realizada:</strong> ${escapeHTML(t.motivoNoRealizada)}<br>` : ""}
-            `;
-
-            bloque.appendChild(card);
-          });
-
-          cont.appendChild(bloque);
-        });
+      document.getElementById("listaTareas").appendChild(card);
     }
 
-    cargarHistorial();
+    function abrirPopup(boton) {
+      const card = boton.closest(".tarea-card");
+      tareaReprogramar = {
+        id: card.dataset.id,
+        fecha: card.dataset.fecha,
+        tarea: card.dataset.tarea
+      };
+      document.getElementById("popup").style.display = "flex";
+    }
+
+    function cerrarPopup() {
+      document.getElementById("popup").style.display = "none";
+      tareaReprogramar = null;
+    }
+
+    function mesAnterior() {
+      fechaActual.setMonth(fechaActual.getMonth() - 1);
+      cargarCalendario();
+    }
+
+    function mesSiguiente() {
+      fechaActual.setMonth(fechaActual.getMonth() + 1);
+      cargarCalendario();
+    }
+
+    function nombreMes(m) {
+      return [
+        "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+        "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+      ][m];
+    }
+
+    cargarCalendario();
   </script>
 
   <script>

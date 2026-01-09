@@ -75,7 +75,6 @@
   </div>
 
   <script>
-    // Evita inyecciones de HTML
     function escapeHTML(str) {
       if (!str) return "";
       return str.replace(/[&<>"']/g, m => ({
@@ -88,7 +87,8 @@
     }
 
     function cargarHistorial() {
-      fetch("/admin/historial")
+      // ✔ CORREGIDO: antes /admin/historial → ahora /api/admin-historial
+      fetch("/api/admin-historial")
         .then(res => res.json())
         .then(data => mostrarHistorial(data))
         .catch(err => {
@@ -107,14 +107,12 @@
         return;
       }
 
-      // Agrupar por fecha
       const porFecha = {};
       data.forEach(t => {
         if (!porFecha[t.fecha]) porFecha[t.fecha] = [];
         porFecha[t.fecha].push(t);
       });
 
-      // Ordenar fechas de más reciente a más antigua
       Object.keys(porFecha)
         .sort((a, b) => new Date(b) - new Date(a))
         .forEach(fecha => {

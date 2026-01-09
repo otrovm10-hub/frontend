@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Panel del Administrador</title>
 
-  <!-- Manifest para instalar como app -->
   <link rel="manifest" href="/manifest.json">
 
   <style>
@@ -147,7 +146,7 @@
       <label>Tarea:</label>
       <select id="selTarea"></select>
 
-      <button onclick="asignarTarea()">Asignar tarea</button>
+      <button onclick="alert('En Vercel no se pueden asignar tareas todavía (falta base de datos).')">Asignar tarea</button>
     </div>
 
     <h3>Calendario de tareas</h3>
@@ -175,7 +174,7 @@
       <label>Observación:</label>
       <input type="text" id="obsReprogramar" placeholder="Motivo de reprogramación">
 
-      <button onclick="confirmarReprogramar()">Confirmar</button>
+      <button onclick="alert('En Vercel no se pueden reprogramar tareas todavía (falta base de datos).'); cerrarPopup();">Confirmar</button>
       <button onclick="cerrarPopup()">Cancelar</button>
     </div>
   </div>
@@ -186,7 +185,7 @@
     let fechaActual = new Date();
     let tareaReprogramar = null;
 
-    fetch("/empleados")
+    fetch("/api/empleados")
       .then(res => res.json())
       .then(data => {
         empleados = data;
@@ -196,7 +195,7 @@
         });
       });
 
-    fetch("/catalogo")
+    fetch("/api/catalogo")
       .then(res => res.json())
       .then(data => {
         catalogo = data;
@@ -218,24 +217,6 @@
       sel.innerHTML = "";
       catalogo[categoria].forEach(t => {
         sel.innerHTML += `<option value="${t}">${t}</option>`;
-      });
-    }
-
-    function asignarTarea() {
-      const id = document.getElementById("selEmpleado").value;
-      const fecha = document.getElementById("selFecha").value;
-      const tarea = document.getElementById("selTarea").value;
-
-      if (!id || !fecha || !tarea) return alert("Complete todos los campos");
-
-      fetch("/admin/agregar-tarea", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, fecha, tarea })
-      }).then(() => {
-        alert("Tarea asignada");
-        cargarCalendario();
-        verDia(fecha);
       });
     }
 
@@ -284,7 +265,7 @@
       for (let dia = 1; dia <= ultimoDia; dia++) {
         const fecha = `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
-        fetch(`/admin/tareas-completas?fecha=${fecha}`)
+        fetch(`/api/admin-tareas-completas?fecha=${fecha}`)
           .then(res => res.json())
           .then(data => {
             const div = document.getElementById("info-" + fecha);
@@ -313,7 +294,7 @@
       const cont = document.getElementById("listaTareas");
       cont.innerHTML = "<p>Cargando...</p>";
 
-      fetch(`/admin/tareas-completas?fecha=${fecha}`)
+      fetch(`/api/admin-tareas-completas?fecha=${fecha}`)
         .then(res => res.json())
         .then(data => mostrarTareas(fecha, data));
     }
@@ -350,55 +331,19 @@
 
       if (t.tipo === "asignada") {
         card.innerHTML += `
-          <button class="btn-mini" onclick="agregarObsAsignada(this)">Agregar obs admin</button>
+          <button class="btn-mini" onclick="alert('En Vercel no se pueden guardar observaciones todavía.')">Agregar obs admin</button>
         `;
       }
 
       if (t.tipo === "pendiente_admin") {
         card.innerHTML += `
-          <button class="btn-mini" onclick="aprobar(this)">Aprobar</button>
+          <button class="btn-mini" onclick="alert('En Vercel no se pueden aprobar tareas todavía.')">Aprobar</button>
           <button class="btn-mini" onclick="abrirPopup(this)">Reprogramar</button>
-          <button class="btn-mini" onclick="devolver(this)">Devolver</button>
+          <button class="btn-mini" onclick="alert('En Vercel no se pueden devolver tareas todavía.')">Devolver</button>
         `;
       }
 
       document.getElementById("listaTareas").appendChild(card);
-    }
-
-    function agregarObsAsignada(boton) {
-      const card = boton.closest(".tarea-card");
-      const id = card.dataset.id;
-      const fecha = card.dataset.fecha;
-      const tarea = card.dataset.tarea;
-
-      const obs = prompt("Observación del administrador:");
-      if (!obs) return;
-
-      fetch("/guardar-observacion-admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, fecha, tarea, observacionAdmin: obs })
-      })
-      .then(() => verDia(fecha));
-    }
-
-    function aprobar(boton) {
-      const card = boton.closest(".tarea-card");
-      const id = card.dataset.id;
-      const fecha = card.dataset.fecha;
-      const tarea = card.dataset.tarea;
-
-      const obs = prompt("Observación del administrador (opcional):");
-
-      fetch("/admin/aprobar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, fecha, tarea, observacionAdmin: obs })
-      })
-      .then(() => {
-        cargarCalendario();
-        verDia(fecha);
-      });
     }
 
     function abrirPopup(boton) {
@@ -414,53 +359,6 @@
     function cerrarPopup() {
       document.getElementById("popup").style.display = "none";
       tareaReprogramar = null;
-    }
-
-    function confirmarReprogramar() {
-      const nuevaFecha = document.getElementById("nuevaFecha").value;
-      const obs = document.getElementById("obsReprogramar").value;
-
-      if (!nuevaFecha) return alert("Seleccione una nueva fecha");
-
-      fetch("/admin/reprogramar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...tareaReprogramar,
-          nuevaFecha,
-          observacionAdmin: obs
-        })
-      })
-      .then(() => {
-        cerrarPopup();
-        cargarCalendario();
-        verDia(tareaReprogramar.fecha);
-      });
-    }
-
-    function devolver(boton) {
-      const card = boton.closest(".tarea-card");
-      const id = card.dataset.id;
-      const fecha = card.dataset.fecha;
-      const tarea = card.dataset.tarea;
-
-      const obs = prompt("Observación del administrador (opcional):") || "Tarea devuelta por el administrador";
-
-      fetch("/admin/reprogramar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          fecha,
-          tarea,
-          nuevaFecha: fecha,
-          observacionAdmin: obs
-        })
-      })
-      .then(() => {
-        cargarCalendario();
-        verDia(fecha);
-      });
     }
 
     function mesAnterior() {
