@@ -1,0 +1,134 @@
+{
+  "2026-01-07": {
+    "101": []
+  },
+  "2026-01-08": {
+    "101": [
+      {
+        "tarea": "C6 – Mantener limpios los dispensadores de jugo, limpiar la máquina de refrescos del lobby, quitar las tapas y cepillar.",
+        "estado": "en_proceso",
+        "obsEmpleado": "ttttt",
+        "obsAdmin": "jjjj",
+        "motivoNoRealizada": ""
+      },
+      {
+        "tarea": "C1 – Mantener limpios pisos, zócalos, paredes, techo, ventilas y luces del área de mostrador y drive-thru.",
+        "estado": "pendiente",
+        "obsEmpleado": "no htttt",
+        "obsAdmin": "Tarea devuelta por el administrador",
+        "motivoNoRealizada": ""
+      }
+    ]
+  },
+  "2026-01-01": {
+    "101": []
+  },
+  "2026-01-02": {
+    "101": []
+  },
+  "2026-01-03": {
+    "101": []
+  },
+  "2026-01-04": {
+    "101": []
+  },
+  "2026-01-05": {
+    "101": []
+  },
+  "2026-01-06": {
+    "101": []
+  },
+  "2026-01-09": {
+    "101": [
+      {
+        "tarea": "C1 – Mantener limpios pisos, zócalos, paredes, techo, ventilas y luces del área de mostrador y drive-thru.",
+        "estado": "pendiente",
+        "obsEmpleado": "",
+        "obsAdmin": "",
+        "motivoNoRealizada": ""
+      }
+    ]
+  },
+  "2026-01-10": {
+    "101": [
+      {
+        "tarea": "C6 – Mantener limpios los dispensadores de jugo, limpiar la máquina de refrescos del lobby, quitar las tapas y cepillar.",
+        "estado": "pendiente",
+        "obsEmpleado": "",
+        "obsAdmin": "",
+        "motivoNoRealizada": ""
+      }
+    ]
+  },
+  "2026-01-11": {
+    "101": [
+      {
+        "tarea": "C6 – Mantener limpios los dispensadores de jugo, limpiar la máquina de refrescos del lobby, quitar las tapas y cepillar.",
+        "estado": "en_proceso",
+        "obsEmpleado": "",
+        "obsAdmin": "Tarea devuelta por el administrador",
+        "motivoNoRealizada": ""
+      }
+    ]
+  },
+  "2026-01-12": {
+    "101": []
+  },
+  "2026-01-13": {
+    "101": []
+  },
+  "2026-01-14": {
+    "101": []
+  },
+  "2026-01-15": {
+    "101": []
+  },
+  "2026-01-16": {
+    "101": []
+  },
+  "2026-01-17": {
+    "101": []
+  },
+  "2026-01-18": {
+    "101": []
+  },
+  "2026-01-19": {
+    "101": []
+  },
+  "2026-01-20": {
+    "101": []
+  },
+  "2026-01-21": {
+    "101": []
+  },
+  "2026-01-22": {
+    "101": []
+  },
+  "2026-01-23": {
+    "101": []
+  },
+  "2026-01-24": {
+    "101": []
+  },
+  "2026-01-25": {
+    "101": []
+  },
+  "2026-01-26": {
+    "101": []
+  },
+  "2026-01-27": {
+    "101": []
+  },
+  "2026-01-28": {
+    "101": []
+  },
+  "2026-01-29": {
+    "101": []
+  },
+  "2026-01-30": {
+    "101": []
+  },
+  "2026-01-31": {
+    "101": []
+  }
+}
