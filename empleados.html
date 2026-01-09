@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Panel del Empleado</title>
 
-  <!-- Manifest para instalar como app -->
   <link rel="manifest" href="/manifest.json">
 
   <style>
@@ -51,10 +50,6 @@
     button:hover {
       background: #c1121f;
       color: #ffffff;
-    }
-
-    #calendario {
-      margin-top: 20px;
     }
 
     .cal-grid {
@@ -144,9 +139,23 @@
     let empleadoID = null;
     let fechaActual = new Date();
 
+    // Evita inyecciones de HTML
+    function escapeHTML(str) {
+      if (!str) return "";
+      return str.replace(/[&<>"']/g, m => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[m]));
+    }
+
+    // Cargar lista de empleados
     fetch("/empleados")
       .then(res => res.json())
-      .then(data => empleados = data);
+      .then(data => empleados = data)
+      .catch(() => alert("Error cargando empleados"));
 
     function entrar() {
       empleadoID = document.getElementById("idEmpleado").value.trim();
@@ -157,7 +166,7 @@
 
       document.getElementById("login").style.display = "none";
       document.getElementById("panel").style.display = "block";
-      document.getElementById("nombreEmpleado").textContent = "Hola " + nombre;
+      document.getElementById("nombreEmpleado").textContent = "Hola " + escapeHTML(nombre);
 
       cargarCalendario();
     }
@@ -173,27 +182,25 @@
       const ultimoDia = new Date(año, mes + 1, 0);
 
       const cont = document.getElementById("calendario");
-      cont.innerHTML = "";
+      cont.innerHTML = `<div class="cal-grid"></div>`;
+      const grid = cont.querySelector(".cal-grid");
 
-      let html = `<div class="cal-grid">`;
-
+      // Espacios vacíos antes del primer día
       for (let i = 0; i < primerDia.getDay(); i++) {
-        html += `<div></div>`;
+        grid.innerHTML += `<div></div>`;
       }
 
+      // Días del mes
       for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
         const fecha = `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
-        html += `
+        grid.innerHTML += `
           <div class="cal-dia" onclick="verDia('${fecha}')">
             <strong>${dia}</strong><br>
             <div id="info-${fecha}">Cargando...</div>
           </div>
         `;
       }
-
-      html += `</div>`;
-      cont.innerHTML = html;
 
       cargarResumenMes(año, mes);
     }
@@ -207,15 +214,17 @@
         fetch(`/tareas-del-dia/${empleadoID}?fecha=${fecha}`)
           .then(res => res.json())
           .then(data => {
-            const tareas = data.tareas;
+            const tareas = data.tareas || [];
             const div = document.getElementById("info-" + fecha);
 
+            if (!div) return;
+
             if (tareas.length === 0) {
-              div.innerHTML = "0 tareas";
+              div.textContent = "0 tareas";
               return;
             }
 
-            let colores = tareas.map(t => {
+            const colores = tareas.map(t => {
               if (t.estado === "terminada") return "🟢";
               if (t.estado === "en_proceso") return "🟡";
               if (t.estado === "no_realizada") return "🔴";
@@ -223,6 +232,10 @@
             }).join("");
 
             div.innerHTML = `${tareas.length} tareas<br>${colores}`;
+          })
+          .catch(() => {
+            const div = document.getElementById("info-" + fecha);
+            if (div) div.textContent = "Error";
           });
       }
     }
@@ -247,7 +260,8 @@
     function verDia(fecha) {
       fetch(`/tareas-del-dia/${empleadoID}?fecha=${fecha}`)
         .then(res => res.json())
-        .then(data => mostrarTareas(fecha, data.tareas));
+        .then(data => mostrarTareas(fecha, data.tareas || []))
+        .catch(() => alert("Error cargando tareas"));
     }
 
     function mostrarTareas(fecha, tareas) {
@@ -271,10 +285,10 @@
       card.dataset.fecha = fecha;
 
       card.innerHTML = `
-        <strong>Tarea:</strong> ${t.tarea}<br>
-        ${t.obsAdmin ? `<strong>Obs admin:</strong> ${t.obsAdmin}<br>` : ""}
-        ${t.obsEmpleado ? `<strong>Tu observación:</strong> ${t.obsEmpleado}<br>` : ""}
-        ${t.motivoNoRealizada ? `<strong>Motivo:</strong> ${t.motivoNoRealizada}<br>` : ""}
+        <strong>Tarea:</strong> ${escapeHTML(t.tarea)}<br>
+        ${t.obsAdmin ? `<strong>Obs admin:</strong> ${escapeHTML(t.obsAdmin)}<br>` : ""}
+        ${t.obsEmpleado ? `<strong>Tu observación:</strong> ${escapeHTML(t.obsEmpleado)}<br>` : ""}
+        ${t.motivoNoRealizada ? `<strong>Motivo:</strong> ${escapeHTML(t.motivoNoRealizada)}<br>` : ""}
         <br>
 
         <button class="btn-mini ${t.estado === 'en_proceso' ? 'proceso' : ''}"
@@ -310,13 +324,15 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ empleado: empleadoID, fecha, tarea, estado })
-      }).then(() => {
+      })
+      .then(() => {
         if (estado === "en_proceso") {
           boton.classList.add("proceso");
         } else {
           verDia(fecha);
         }
-      });
+      })
+      .catch(() => alert("Error guardando estado"));
     }
 
     function noRealizada(boton) {
@@ -337,7 +353,9 @@
           estado: "no_realizada",
           motivoNoRealizada: motivo
         })
-      }).then(() => verDia(fecha));
+      })
+      .then(() => verDia(fecha))
+      .catch(() => alert("Error guardando motivo"));
     }
 
     function agregarObs(boton) {
@@ -352,7 +370,9 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ empleado: empleadoID, fecha, tarea, observacion: obs })
-      }).then(() => verDia(fecha));
+      })
+      .then(() => verDia(fecha))
+      .catch(() => alert("Error guardando observación"));
     }
   </script>
 

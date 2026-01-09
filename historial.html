@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Historial de Tareas</title>
 
-  <!-- Manifest para instalar como app -->
   <link rel="manifest" href="/manifest.json">
 
   <style>
@@ -76,17 +75,34 @@
   </div>
 
   <script>
+    // Evita inyecciones de HTML
+    function escapeHTML(str) {
+      if (!str) return "";
+      return str.replace(/[&<>"']/g, m => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[m]));
+    }
+
     function cargarHistorial() {
       fetch("/admin/historial")
         .then(res => res.json())
-        .then(data => mostrarHistorial(data));
+        .then(data => mostrarHistorial(data))
+        .catch(err => {
+          document.getElementById("contenedor").innerHTML =
+            "<p>Error al cargar el historial.</p>";
+          console.error("Error:", err);
+        });
     }
 
     function mostrarHistorial(data) {
       const cont = document.getElementById("contenedor");
       cont.innerHTML = "";
 
-      if (data.length === 0) {
+      if (!data || data.length === 0) {
         cont.innerHTML = "<p>No hay tareas en el historial.</p>";
         return;
       }
@@ -98,30 +114,33 @@
         porFecha[t.fecha].push(t);
       });
 
-      Object.keys(porFecha).sort().forEach(fecha => {
-        const bloque = document.createElement("div");
-        bloque.className = "fecha-bloque";
+      // Ordenar fechas de más reciente a más antigua
+      Object.keys(porFecha)
+        .sort((a, b) => new Date(b) - new Date(a))
+        .forEach(fecha => {
+          const bloque = document.createElement("div");
+          bloque.className = "fecha-bloque";
 
-        bloque.innerHTML = `<h2>${fecha}</h2>`;
+          bloque.innerHTML = `<h2>${fecha}</h2>`;
 
-        porFecha[fecha].forEach(t => {
-          const card = document.createElement("div");
-          card.className = "tarea-card";
+          porFecha[fecha].forEach(t => {
+            const card = document.createElement("div");
+            card.className = "tarea-card";
 
-          card.innerHTML = `
-            <strong>Empleado:</strong> ${t.nombre} (${t.id})<br>
-            <strong>Tarea:</strong> ${t.tarea}<br>
-            <strong>Estado:</strong> ${t.estado}<br>
-            ${t.obsEmpleado ? `<strong>Obs empleado:</strong> ${t.obsEmpleado}<br>` : ""}
-            ${t.obsAdmin ? `<strong>Obs admin:</strong> ${t.obsAdmin}<br>` : ""}
-            ${t.motivoNoRealizada ? `<strong>Motivo no realizada:</strong> ${t.motivoNoRealizada}<br>` : ""}
-          `;
+            card.innerHTML = `
+              <strong>Empleado:</strong> ${escapeHTML(t.nombre)} (${escapeHTML(t.id)})<br>
+              <strong>Tarea:</strong> ${escapeHTML(t.tarea)}<br>
+              <strong>Estado:</strong> ${escapeHTML(t.estado)}<br>
+              ${t.obsEmpleado ? `<strong>Obs empleado:</strong> ${escapeHTML(t.obsEmpleado)}<br>` : ""}
+              ${t.obsAdmin ? `<strong>Obs admin:</strong> ${escapeHTML(t.obsAdmin)}<br>` : ""}
+              ${t.motivoNoRealizada ? `<strong>Motivo no realizada:</strong> ${escapeHTML(t.motivoNoRealizada)}<br>` : ""}
+            `;
 
-          bloque.appendChild(card);
+            bloque.appendChild(card);
+          });
+
+          cont.appendChild(bloque);
         });
-
-        cont.appendChild(bloque);
-      });
     }
 
     cargarHistorial();
