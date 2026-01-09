@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel del Empleado</title>
+
+  <!-- Manifest para instalar como app -->
+  <link rel="manifest" href="/manifest.json">
+
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1, h2, h3 {
+      color: #ffc300;
+    }
+
+    #login, #panel {
+      max-width: 900px;
+      margin: 20px auto;
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 10px;
+      border-left: 5px solid #c1121f;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 2px solid #c1121f;
+      background: #1e1e1e;
+      color: #ffffff;
+      font-size: 16px;
+    }
+
+    button {
+      background: #ffc300;
+      color: #1e1e1e;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #c1121f;
+      color: #ffffff;
+    }
+
+    #calendario {
+      margin-top: 20px;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .cal-dia {
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      border-left: 4px solid #c1121f;
+      min-height: 80px;
+    }
+
+    .cal-dia:hover {
+      background: #3a3a3a;
+    }
+
+    .tarea-card {
+      background: #2a2a2a;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 8px;
+      border-left: 5px solid #ffc300;
+      text-align: left;
+    }
+
+    .btn-mini {
+      width: auto;
+      padding: 6px 10px;
+      margin-right: 5px;
+      margin-top: 5px;
+      font-size: 14px;
+      background: #ffc300;
+      color: #1e1e1e;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-mini:hover {
+      background: #c1121f;
+      color: #ffffff;
+    }
+
+    .proceso {
+      background: #ffc300 !important;
+      color: #1e1e1e !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Panel del Empleado</h1>
+
+  <div id="login">
+    <h3>Ingrese su ID</h3>
+    <input type="number" id="idEmpleado" placeholder="Ej: 101">
+    <button onclick="entrar()">Entrar</button>
+  </div>
+
+  <div id="panel" style="display:none;">
+    <h2 id="nombreEmpleado"></h2>
+
+    <h3>Calendario de tareas</h3>
+
+    <div>
+      <button onclick="mesAnterior()">← Mes anterior</button>
+      <button onclick="mesSiguiente()">Mes siguiente →</button>
+    </div>
+
+    <h3 id="tituloMes"></h3>
+
+    <div id="calendario"></div>
+
+    <h3 id="tituloDia"></h3>
+    <div id="listaTareas"></div>
+  </div>
+
+  <script>
+    let empleados = {};
+    let empleadoID = null;
+    let fechaActual = new Date();
+
+    fetch("/empleados")
+      .then(res => res.json())
+      .then(data => empleados = data);
+
+    function entrar() {
+      empleadoID = document.getElementById("idEmpleado").value.trim();
+      if (!empleadoID) return alert("Ingrese un ID válido");
+
+      const nombre = empleados[empleadoID];
+      if (!nombre) return alert("Empleado no encontrado");
+
+      document.getElementById("login").style.display = "none";
+      document.getElementById("panel").style.display = "block";
+      document.getElementById("nombreEmpleado").textContent = "Hola " + nombre;
+
+      cargarCalendario();
+    }
+
+    function cargarCalendario() {
+      const año = fechaActual.getFullYear();
+      const mes = fechaActual.getMonth();
+
+      document.getElementById("tituloMes").textContent =
+        nombreMes(mes) + " " + año;
+
+      const primerDia = new Date(año, mes, 1);
+      const ultimoDia = new Date(año, mes + 1, 0);
+
+      const cont = document.getElementById("calendario");
+      cont.innerHTML = "";
+
+      let html = `<div class="cal-grid">`;
+
+      for (let i = 0; i < primerDia.getDay(); i++) {
+        html += `<div></div>`;
+      }
+
+      for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+        const fecha = `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+
+        html += `
+          <div class="cal-dia" onclick="verDia('${fecha}')">
+            <strong>${dia}</strong><br>
+            <div id="info-${fecha}">Cargando...</div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      cont.innerHTML = html;
+
+      cargarResumenMes(año, mes);
+    }
+
+    function cargarResumenMes(año, mes) {
+      const ultimoDia = new Date(año, mes + 1, 0).getDate();
+
+      for (let dia = 1; dia <= ultimoDia; dia++) {
+        const fecha = `${año}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+
+        fetch(`/tareas-del-dia/${empleadoID}?fecha=${fecha}`)
+          .then(res => res.json())
+          .then(data => {
+            const tareas = data.tareas;
+            const div = document.getElementById("info-" + fecha);
+
+            if (tareas.length === 0) {
+              div.innerHTML = "0 tareas";
+              return;
+            }
+
+            let colores = tareas.map(t => {
+              if (t.estado === "terminada") return "🟢";
+              if (t.estado === "en_proceso") return "🟡";
+              if (t.estado === "no_realizada") return "🔴";
+              return "⚪";
+            }).join("");
+
+            div.innerHTML = `${tareas.length} tareas<br>${colores}`;
+          });
+      }
+    }
+
+    function mesAnterior() {
+      fechaActual.setMonth(fechaActual.getMonth() - 1);
+      cargarCalendario();
+    }
+
+    function mesSiguiente() {
+      fechaActual.setMonth(fechaActual.getMonth() + 1);
+      cargarCalendario();
+    }
+
+    function nombreMes(m) {
+      return [
+        "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+        "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+      ][m];
+    }
+
+    function verDia(fecha) {
+      fetch(`/tareas-del-dia/${empleadoID}?fecha=${fecha}`)
+        .then(res => res.json())
+        .then(data => mostrarTareas(fecha, data.tareas));
+    }
+
+    function mostrarTareas(fecha, tareas) {
+      document.getElementById("tituloDia").textContent = "Tareas del " + fecha;
+
+      const cont = document.getElementById("listaTareas");
+      cont.innerHTML = "";
+
+      if (tareas.length === 0) {
+        cont.innerHTML = "<p>No tienes tareas este día.</p>";
+        return;
+      }
+
+      tareas.forEach(t => crearTarjeta(t, fecha));
+    }
+
+    function crearTarjeta(t, fecha) {
+      const card = document.createElement("div");
+      card.className = "tarea-card";
+      card.dataset.tarea = t.tarea;
+      card.dataset.fecha = fecha;
+
+      card.innerHTML = `
+        <strong>Tarea:</strong> ${t.tarea}<br>
+        ${t.obsAdmin ? `<strong>Obs admin:</strong> ${t.obsAdmin}<br>` : ""}
+        ${t.obsEmpleado ? `<strong>Tu observación:</strong> ${t.obsEmpleado}<br>` : ""}
+        ${t.motivoNoRealizada ? `<strong>Motivo:</strong> ${t.motivoNoRealizada}<br>` : ""}
+        <br>
+
+        <button class="btn-mini ${t.estado === 'en_proceso' ? 'proceso' : ''}"
+                onclick="cambiarEstado(this, 'en_proceso')">
+          En proceso
+        </button>
+
+        <button class="btn-mini"
+                onclick="cambiarEstado(this, 'terminada')">
+          Terminada
+        </button>
+
+        <button class="btn-mini"
+                onclick="noRealizada(this)">
+          No realizada
+        </button>
+
+        <button class="btn-mini"
+                onclick="agregarObs(this)">
+          Observación
+        </button>
+      `;
+
+      document.getElementById("listaTareas").appendChild(card);
+    }
+
+    function cambiarEstado(boton, estado) {
+      const card = boton.closest(".tarea-card");
+      const tarea = card.dataset.tarea;
+      const fecha = card.dataset.fecha;
+
+      fetch("/guardar-estado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empleado: empleadoID, fecha, tarea, estado })
+      }).then(() => {
+        if (estado === "en_proceso") {
+          boton.classList.add("proceso");
+        } else {
+          verDia(fecha);
+        }
+      });
+    }
+
+    function noRealizada(boton) {
+      const card = boton.closest(".tarea-card");
+      const tarea = card.dataset.tarea;
+      const fecha = card.dataset.fecha;
+
+      const motivo = prompt("Motivo:");
+      if (!motivo) return;
+
+      fetch("/guardar-estado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empleado: empleadoID,
+          fecha,
+          tarea,
+          estado: "no_realizada",
+          motivoNoRealizada: motivo
+        })
+      }).then(() => verDia(fecha));
+    }
+
+    function agregarObs(boton) {
+      const card = boton.closest(".tarea-card");
+      const tarea = card.dataset.tarea;
+      const fecha = card.dataset.fecha;
+
+      const obs = prompt("Escriba su observación:");
+      if (!obs) return;
+
+      fetch("/guardar-observacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empleado: empleadoID, fecha, tarea, observacion: obs })
+      }).then(() => verDia(fecha));
+    }
+  </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js");
+    }
+  </script>
+
+</body>
+</html>

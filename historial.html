@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Historial de Tareas</title>
+
+  <!-- Manifest para instalar como app -->
+  <link rel="manifest" href="/manifest.json">
+
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1, h2 {
+      color: #ffc300;
+    }
+
+    #contenedor {
+      max-width: 900px;
+      margin: 20px auto;
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 10px;
+      border-left: 5px solid #c1121f;
+      text-align: left;
+    }
+
+    .fecha-bloque {
+      margin-bottom: 30px;
+      padding: 15px;
+      background: #1e1e1e;
+      border-radius: 10px;
+      border-left: 5px solid #ffc300;
+    }
+
+    .tarea-card {
+      background: #2a2a2a;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 5px solid #c1121f;
+    }
+
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 2px solid #c1121f;
+      background: #ffc300;
+      color: #1e1e1e;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #c1121f;
+      color: #ffffff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Historial de Tareas Aprobadas</h1>
+
+  <button onclick="window.location.href='admin.html'">⬅ Volver al panel</button>
+
+  <div id="contenedor">
+    <p>Cargando historial...</p>
+  </div>
+
+  <script>
+    function cargarHistorial() {
+      fetch("/admin/historial")
+        .then(res => res.json())
+        .then(data => mostrarHistorial(data));
+    }
+
+    function mostrarHistorial(data) {
+      const cont = document.getElementById("contenedor");
+      cont.innerHTML = "";
+
+      if (data.length === 0) {
+        cont.innerHTML = "<p>No hay tareas en el historial.</p>";
+        return;
+      }
+
+      // Agrupar por fecha
+      const porFecha = {};
+      data.forEach(t => {
+        if (!porFecha[t.fecha]) porFecha[t.fecha] = [];
+        porFecha[t.fecha].push(t);
+      });
+
+      Object.keys(porFecha).sort().forEach(fecha => {
+        const bloque = document.createElement("div");
+        bloque.className = "fecha-bloque";
+
+        bloque.innerHTML = `<h2>${fecha}</h2>`;
+
+        porFecha[fecha].forEach(t => {
+          const card = document.createElement("div");
+          card.className = "tarea-card";
+
+          card.innerHTML = `
+            <strong>Empleado:</strong> ${t.nombre} (${t.id})<br>
+            <strong>Tarea:</strong> ${t.tarea}<br>
+            <strong>Estado:</strong> ${t.estado}<br>
+            ${t.obsEmpleado ? `<strong>Obs empleado:</strong> ${t.obsEmpleado}<br>` : ""}
+            ${t.obsAdmin ? `<strong>Obs admin:</strong> ${t.obsAdmin}<br>` : ""}
+            ${t.motivoNoRealizada ? `<strong>Motivo no realizada:</strong> ${t.motivoNoRealizada}<br>` : ""}
+          `;
+
+          bloque.appendChild(card);
+        });
+
+        cont.appendChild(bloque);
+      });
+    }
+
+    cargarHistorial();
+  </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js");
+    }
+  </script>
+
+</body>
+</html>
