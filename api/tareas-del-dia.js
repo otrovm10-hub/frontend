@@ -1,17 +1,27 @@
-import { cargarJSON } from "./utils.js";
+import { supabase } from "./supabase";
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { id, fecha } = req.query;
 
-  const rutina = cargarJSON("rutina.json");
+  if (!id || !fecha) {
+    return res.status(400).json({ error: "Faltan parámetros id o fecha" });
+  }
 
-  const dia = fecha || new Date().toISOString().split("T")[0];
+  const { data, error } = await supabase
+    .from("tareas")
+    .select("*")
+    .eq("empleado_id", id)
+    .eq("fecha", fecha)
+    .order("id", { ascending: true });
 
-  const tareas = rutina[dia]?.[id] || [];
+  if (error) {
+    console.error("Error consultando tareas:", error);
+    return res.status(500).json({ error: "Error al obtener tareas" });
+  }
 
-  res.status(200).json({
+  return res.status(200).json({
     empleado: id,
-    fecha: dia,
-    tareas
+    fecha,
+    tareas: data || []
   });
 }
